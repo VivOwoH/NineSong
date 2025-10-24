@@ -3,10 +3,12 @@ extends Control
 ## Simple dialogue UI that displays narrative content with resource tracking
 ## Connects to NarrativeManager to show dialogue and choices
 
-@onready var dialogue_label: RichTextLabel = $VBoxContainer/DialogueLabel
-@onready var choices_container: VBoxContainer = $VBoxContainer/ChoicesContainer
-@onready var continue_button: Button = $VBoxContainer/ContinueButton
-@onready var resources_label: Label = $VBoxContainer/ResourceLabel
+@onready var dialogue_label: RichTextLabel = $MarginContainer/HBoxContainer/DialoguePanel/VBoxContainer/ScrollArea/ContentContainer/DialogueLabel
+@onready var choices_container: VBoxContainer = $MarginContainer/HBoxContainer/DialoguePanel/VBoxContainer/ScrollArea/ContentContainer/ChoicesContainer
+@onready var continue_button: Button = $MarginContainer/HBoxContainer/DialoguePanel/VBoxContainer/ContinueButton
+@onready var resources_label: Label = $MarginContainer/HBoxContainer/DialoguePanel/VBoxContainer/ResourceLabel
+@onready var portrait_texture: TextureRect = $MarginContainer/HBoxContainer/PortraitPanel/PortraitTexture
+@onready var background_texture: TextureRect = $BackgroundTexture
 
 var narrative_manager: NarrativeManager
 
@@ -38,10 +40,11 @@ func setup_example_story():
 	narrator.character_color = Color(0.7, 0.7, 0.7)
 	char_db.add_character(narrator)
 	
-	var shan_gui = Character.new()
-	shan_gui.character_name = "Mountain Spirit"
-	shan_gui.character_color = Color(0.4, 0.8, 0.5)
-	char_db.add_character(shan_gui)
+	var xiang_furen = Character.new()
+	xiang_furen.character_name = "Xiang Furen"
+	xiang_furen.character_color = Color(0.4, 0.8, 0.5)
+	xiang_furen.portrait_texture = preload("res://asset/xiangfuren_p.png")
+	char_db.add_character(xiang_furen)
 	
 	var inner_voice = Character.new()
 	inner_voice.character_name = "Inner Voice"
@@ -62,7 +65,7 @@ func setup_example_story():
 		},
 		{
 			"text": "Why have you come to my domain, mortal?",
-			"tags": "# Character # Mountain Spirit",
+			"tags": "# Character # Xiang Furen",
 		},
 		{
 			"text": "You feel the pull between your human essence and divine power.",
@@ -96,7 +99,7 @@ func setup_example_story():
 		},
 		{
 			"text": "The spirit regards you with ancient eyes.",
-			"tags": "# Character # Mountain Spirit",
+			"tags": "# Character # Xiang Furen",
 		},
 		{
 			"text": "Your choice has been noted by the gods.",
@@ -111,11 +114,15 @@ func _on_dialogue_line_ready(line: DialogueLine):
 	# Format and display the line
 	var formatted_text = narrative_manager.format_line(line)
 	
-	# Append to existing dialogue (scroll log style)
+	# Append to existing dialogue
 	if dialogue_label.text != "":
 		dialogue_label.text += "\n\n"
 	dialogue_label.text += formatted_text
 	
+	# Update portrait
+	if line.character != null and line.character.portrait_texture != null:
+		portrait_texture.texture = line.character.portrait_texture
+		
 	# Show continue button if no choices
 	continue_button.visible = not line.is_choice()
 
@@ -129,6 +136,10 @@ func _on_choices_ready(choices: Array[DialogueLine]):
 		var choice = choices[i]
 		var button = Button.new()
 		button.text = narrative_manager.format_line(choice)
+		
+		button.custom_minimum_size = Vector2(0,60)
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		button.clip_text = false
 		
 		# Disable if can't afford active check
 		if choice.is_active_check and not choice.check_available:
